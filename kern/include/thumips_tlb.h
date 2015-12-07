@@ -67,7 +67,9 @@ static inline void tlb_refill(uint32_t badaddr, pte_t *pte)
     return ;
   if(badaddr & (1<<12))
     pte--;
-  tlb_replace_random(0, badaddr & THUMIPS_TLB_ENTRYH_VPN2_MASK, 
+
+  static int index = 0;
+  write_one_tlb(index++/*(badaddr >> 13)*/, 0, badaddr & THUMIPS_TLB_ENTRYH_VPN2_MASK,
       pte2tlblow(*pte), pte2tlblow(*(pte+1)));
 }
 
