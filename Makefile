@@ -2,11 +2,11 @@ EMPTY	:=
 SPACE	:= $(EMPTY) $(EMPTY)
 SLASH	:= /
 
-ON_FPGA :=y
+ON_FPGA ?=y
 
 V       := @
 
-#GCCPREFIX:=mips-sde-elf-
+GCCPREFIX:=mips-sde-elf-
 GCCPREFIX ?= /home/guest/cpu/build-gcc/mips_gcc/bin/mips-sde-elf-
 
 # eliminate default suffix rules
@@ -22,7 +22,7 @@ GDB		:= $(GCCPREFIX)gdb
 THUMIPSCC		:= ./thumips-cc
 CLANG := clang
 CC :=$(GCCPREFIX)gcc
-CFLAGS	:=  -fno-builtin -nostdlib  -nostdinc -g  -EL -G0 -fno-delayed-branch -Wa,-O0
+CFLAGS	:=  -fno-builtin -nostdlib  -nostdinc -mno-float -g  -EL -G0 -O2 -Wa,-O0
 CTYPE	:= c S
 
 LD      := $(GCCPREFIX)ld
