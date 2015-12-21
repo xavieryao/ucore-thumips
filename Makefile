@@ -194,4 +194,4 @@ $(OBJDIR)/ucore-kernel-initrd:  $(BUILD_DIR) $(TOOL_MKSFS) $(OBJ) $(USER_APP_BIN
 boot/loader.bin: boot/bootasm.S
 	$(CC) $(CFLAGS) -g -c -o boot/loader.o $^
 	$(LD) -EL -n -G0 -Ttext 0xbfc00000 -o boot/loader boot/loader.o
-	$(OBJCOPY) -O binary  -S boot/loader $@
+	$(OBJCOPY) -O binary -j .text -S boot/loader $@
