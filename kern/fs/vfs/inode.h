@@ -6,6 +6,7 @@
 #include <sfs.h>
 #include <atomic.h>
 #include <assert.h>
+#include <spiffs_inode.h>
 
 struct stat;
 struct iobuf;
@@ -13,7 +14,7 @@ struct iobuf;
 /*
  * A struct inode is an abstract representation of a file.
  *
- * It is an interface that allows the kernel's filesystem-independent 
+ * It is an interface that allows the kernel's filesystem-independent
  * code to interact usefully with multiple sets of filesystem code.
  */
 
@@ -30,10 +31,12 @@ struct inode {
     union {
         struct device __device_info;
         struct sfs_inode __sfs_inode_info;
+        struct spiffs_inode __spiffs_inode_info;
     } in_info;
     enum {
         inode_type_device_info = 0x1234,
         inode_type_sfs_inode_info,
+        inode_type_spiffs_inode_info
     } in_type;
     atomic_t ref_count;
     atomic_t open_count;
@@ -84,7 +87,7 @@ void inode_kill(struct inode *node);
  *                      reject illegal or undesired open modes. Note that
  *                      various operations can be performed without the
  *                      file actually being opened.
- *                      The inode need not look at O_CREAT, O_EXCL, or 
+ *                      The inode need not look at O_CREAT, O_EXCL, or
  *                      O_TRUNC, as these are handled in the VFS layer.
  *
  *                      VOP_EACHOPEN should not be called directly from

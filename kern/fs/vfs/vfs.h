@@ -4,6 +4,7 @@
 #include <defs.h>
 #include <fs.h>
 #include <sfs.h>
+#include <spiffs.h>
 
 struct inode;   // abstract structure for an on-disk file (inode.h)
 struct device;  // abstract structure for a device (dev.h)
@@ -35,9 +36,11 @@ struct iobuf;   // kernel or userspace I/O buffer (iobuf.h)
 struct fs {
     union {
         struct sfs_fs __sfs_info;
+        spiffs __spiffs_info;
     } fs_info;
     enum {
         fs_type_sfs_info,
+        fs_type_spiffs_info,
     } fs_type;
     int (*fs_sync)(struct fs *fs);
     struct inode *(*fs_get_root)(struct fs *fs);

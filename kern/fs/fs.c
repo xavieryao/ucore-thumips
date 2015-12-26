@@ -13,6 +13,7 @@ fs_init(void) {
     vfs_init();
     dev_init();
     sfs_init();
+    // spiffs_ucore_init();
 }
 
 void
