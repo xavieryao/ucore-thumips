@@ -16,6 +16,10 @@ void printbase10(int x);
 /* kern/libs/readline.c */
 char *readline(const char *prompt);
 
+#define stderr 2
+#define stdin 0
+#define stdout 1
+
 
 #endif /* !__LIBS_STDIO_H__ */
 

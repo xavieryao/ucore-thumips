@@ -108,7 +108,7 @@ sys_read(int fd, void *base, size_t len) {
 }
 
 int
-sys_write(int fd, void *base, size_t len) {
+sys_write(int fd, const void *base, size_t len) {
     return syscall(SYS_write, fd, base, len);
 }
 

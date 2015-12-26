@@ -45,5 +45,15 @@ int __exec(const char *name, const char **argv);
 
 void lab6_set_priority(uint32_t priority); //only for lab6
 
+#define STDIN_FILENO 0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+
+typedef unsigned int size_t;
+typedef int ssize_t;
+
+#define EXIT_SUCCESS 0
+#define EXIT_FAILURE 1
+
 #endif /* !__USER_LIBS_ULIB_H__ */
 

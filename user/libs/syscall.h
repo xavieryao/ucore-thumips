@@ -19,7 +19,7 @@ struct dirent;
 int sys_open(const char *path, uint32_t open_flags);
 int sys_close(int fd);
 int sys_read(int fd, void *base, size_t len);
-int sys_write(int fd, void *base, size_t len);
+int sys_write(int fd, const void *base, size_t len);
 int sys_seek(int fd, off_t pos, int whence);
 int sys_fstat(int fd, struct stat *stat);
 int sys_fsync(int fd);

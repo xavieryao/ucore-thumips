@@ -22,7 +22,7 @@ read(int fd, void *base, size_t len) {
 }
 
 int
-write(int fd, void *base, size_t len) {
+write(int fd, const void *base, size_t len) {
     return sys_write(fd, base, len);
 }
 

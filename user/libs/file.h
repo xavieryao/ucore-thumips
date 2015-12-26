@@ -8,7 +8,7 @@ struct stat;
 int open(const char *path, uint32_t open_flags);
 int close(int fd);
 int read(int fd, void *base, size_t len);
-int write(int fd, void *base, size_t len);
+int write(int fd, const void *base, size_t len);
 int seek(int fd, off_t pos, int whence);
 int fstat(int fd, struct stat *stat);
 int fsync(int fd);
