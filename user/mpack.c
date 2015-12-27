@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 
-#define N 163
+#define N 45
 #define NB 11
 #define RPT 100
 
