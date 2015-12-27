@@ -66,12 +66,12 @@ INCLUDES  := $(addprefix -I,$(SRC_DIR))
 INCLUDES  += -I$(SRCDIR)/include
 
 ifeq  ($(ON_FPGA), y)
-USER_APPLIST:= sh put#ls 
+USER_APPLIST:= sh mpack #ls 
 INITRD_BLOCK_CNT:=300 
 FPGA_LD_FLAGS += -S
 MACH_DEF := -DMACH_FPGA
 else
-USER_APPLIST:= pwd cat sh ls forktest yield hello faultreadkernel faultread badarg waitkill pgdir exit sleep
+USER_APPLIST:= pwd cat  mpack sh ls forktest yield hello faultreadkernel faultread badarg waitkill pgdir exit sleep
 # 2M
 INITRD_BLOCK_CNT:=4000 
 MACH_DEF := -DMACH_QEMU
