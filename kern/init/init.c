@@ -25,7 +25,7 @@ void __noreturn
 kern_init(void) {
     //setup_exception_vector();
     tlb_invalidate_all();
-
+    clockOnTheWall_init();
     pic_init();                 // init interrupt controller
     cons_init();                // init the console
     clock_init();               // init clock interrupt

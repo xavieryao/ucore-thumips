@@ -4,8 +4,13 @@
 #include <picirq.h>
 #include <sched.h>
 #include <asm/mipsregs.h>
+#include <clock.h>
 
 volatile size_t ticks;
+
+#ifdef MACH_FPGA
+static unsigned int initClockOnTheWall = 0;
+#endif
 
 #define TIMER0_INTERVAL  1000000 
 
@@ -33,3 +38,22 @@ clock_init(void) {
   kprintf("++setup timer interrupts\n");
 }
 
+void clockOnTheWall_init(void){
+#ifdef MACH_QEMU
+#elif defined MACH_FPGA
+  initClockOnTheWall = getClockOnTheWall();
+#else
+#  warning please define MACH_QEMU or FPGA  
+#endif
+}
+
+unsigned int getClockOnTheWall(void){
+#ifdef MACH_QEMU
+     return (unsigned int)ticks;
+#elif defined MACH_FPGA
+    return (unsigned int)*(volatile unsigned int*)0xbfd00500 - initClockOnTheWall;
+#else
+#  warning please define MACH_QEMU or FPGA 
+    return 0;
+#endif
+}

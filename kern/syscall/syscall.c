@@ -8,8 +8,8 @@
 #include <stat.h>
 #include <dirent.h>
 #include <sysfile.h>
+#include <clock.h>
 
-extern volatile int ticks;
 
 static int
 sys_exit(uint32_t arg[]) {
@@ -70,14 +70,7 @@ sys_pgdir(uint32_t arg[]) {
 
 static int
 sys_gettime(uint32_t arg[]) {
-#ifdef MACH_QEMU
-     return (int)ticks;
-#elif defined MACH_FPGA
-    return (int)*(volatile unsigned int*)0xbfd00500;
-#else
-#  warning please define MACH_QEMU or FPGA 
-    return 0;
-#endif
+return getClockOnTheWall();
 }
 
 static int
