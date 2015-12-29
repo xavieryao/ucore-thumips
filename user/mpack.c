@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ulib.h>
 
 
 #define N 45
@@ -33,6 +34,7 @@ int main(){
   printf("Begin to calc\n");
   
   for(int cnt = 0; cnt < RPT; cnt++){
+    time_t beginClock = gettime_msec();
     for(int i = 0; i < N; i++){
       for(int k = 0; k < N; k++){
         int a_i_k = mat1[i][k];
@@ -42,6 +44,7 @@ int main(){
       }
     }
     printf("Finished %d of %d runs\n", cnt + 1, RPT);
+    printf("Time elapsed: %d ms\n", gettime_msec() - beginClock);
   }
 
   return 0;
