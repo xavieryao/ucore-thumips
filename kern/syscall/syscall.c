@@ -75,7 +75,7 @@ sys_gettime(uint32_t arg[]) {
 #elif defined MACH_FPGA
     return (int)*(volatile unsigned int*)0xbfd00500;
 #else
-#  error please define MACH_QEMU or FPGA 
+#  warning please define MACH_QEMU or FPGA 
 #endif
 }
 
