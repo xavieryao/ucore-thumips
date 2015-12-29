@@ -22,6 +22,8 @@ void __noreturn __panic(const char *file, int line, const char *fmt, ...);
 // static_assert(x) will generate a compile-time error if 'x' is false.
 #define static_assert(x)                                \
     switch (x) { case 0: case (x): ; }
+    
+typedef unsigned int time_t;
 
 int fprintf(int fd, const char *fmt, ...);
 
@@ -34,7 +36,7 @@ int kill(int pid);
 int getpid(void);
 void print_pgdir(void);
 int sleep(unsigned int time);
-unsigned int gettime_msec(void);
+time_t gettime_msec(void);
 int __exec(const char *name, const char **argv);
 
 #define __exec0(name, path, ...)                \

@@ -216,6 +216,10 @@ runit:
 
 int
 main(int argc, char **argv) {
+  printf("===mips-sde-ucore-360===\n");
+  printf("You have spent %d ms starting up.\n", gettime_msec());
+  printf("You have beated 23.33% computers.\n");
+  printf("========================\n");
 	printf("user sh is running!!!\n");
     int ret, interactive = 1;
     if (argc == 2) {

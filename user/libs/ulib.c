@@ -66,9 +66,9 @@ sleep(unsigned int time) {
     return sys_sleep(time);
 }
 
-unsigned int
+time_t
 gettime_msec(void) {
-    return (unsigned int)sys_gettime();
+    return (time_t)sys_gettime();
 }
 
 int
