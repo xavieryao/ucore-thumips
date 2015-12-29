@@ -70,7 +70,7 @@ sys_pgdir(uint32_t arg[]) {
 
 static int
 sys_gettime(uint32_t arg[]) {
-    return (int)ticks;
+    return (int)*(volatile unsigned int*)0xbfd00500;
 }
 
 static int
