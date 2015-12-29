@@ -33,6 +33,8 @@ int main(){
 
   printf("Begin to calc\n");
   
+  time_t initClock = gettime_msec();
+  
   for(int cnt = 0; cnt < RPT; cnt++){
     time_t beginClock = gettime_msec();
     for(int i = 0; i < N; i++){
@@ -44,8 +46,15 @@ int main(){
       }
     }
     printf("Finished %d of %d runs\n", cnt + 1, RPT);
-    printf("Time elapsed: %d ms\n", gettime_msec() - beginClock);
+    time_t duringTime = gettime_msec() - beginClock;
+    if(__builtin_expect(!!(duringTime), 1)){
+      printf("%d iops\n", N*N*N*2*1000 / (gettime_msec() - beginClock) );
+    }else{
+      printf("inf iops\n");
+    }
   }
+  
+  printf("Time elapsed: %d ms\n", gettime_msec() - initClock);
 
   return 0;
 }
