@@ -48,9 +48,9 @@ int main(){
     printf("Finished %d of %d runs\n", cnt + 1, RPT);
     time_t duringTime = gettime_msec() - beginClock;
     if(__builtin_expect(!!(duringTime), 1)){
-      printf("%d iops\n", N*N*N*2*1000 / (gettime_msec() - beginClock) );
+      printf("%d KIO/s\n", N*N*N*2 / (gettime_msec() - beginClock) );
     }else{
-      printf("inf iops\n");
+      printf("inf KIO/s\n");
     }
   }
   
