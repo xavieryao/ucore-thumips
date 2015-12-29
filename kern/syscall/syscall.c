@@ -70,7 +70,13 @@ sys_pgdir(uint32_t arg[]) {
 
 static int
 sys_gettime(uint32_t arg[]) {
+#ifdef MACH_QEMU
+     return (int)ticks;
+#elif defined MACH_FPGA
     return (int)*(volatile unsigned int*)0xbfd00500;
+#else
+#  error please define MACH_QEMU or FPGA 
+#endif
 }
 
 static int
