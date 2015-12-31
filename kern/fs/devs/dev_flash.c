@@ -217,6 +217,7 @@ flash_ioctl(struct device *dev, int op, void *data) {
         int i;
         for (i = 0; i < p->nblk; ++i)
             flash_erase_blk_nolock(p->blk + i);
+        unlock_flash();
         return 0;
     }
     unlock_flash();
