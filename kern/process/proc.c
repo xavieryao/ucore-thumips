@@ -26,20 +26,20 @@ manage all these details efficiently. In ucore, a thread is just a special kind 
 process state       :     meaning               -- reason
     PROC_UNINIT     :   uninitialized           -- alloc_proc
     PROC_SLEEPING   :   sleeping                -- try_free_pages, do_wait, do_sleep
-    PROC_RUNNABLE   :   runnable(maybe running) -- proc_init, wakeup_proc, 
+    PROC_RUNNABLE   :   runnable(maybe running) -- proc_init, wakeup_proc,
     PROC_ZOMBIE     :   almost dead             -- do_exit
 
 -----------------------------
 process state changing:
-                                            
+
   alloc_proc                                 RUNNING
       +                                   +--<----<--+
       +                                   + proc_run +
-      V                                   +-->---->--+ 
+      V                                   +-->---->--+
 PROC_UNINIT -- proc_init/wakeup_proc --> PROC_RUNNABLE -- try_free_pages/do_wait/do_sleep --> PROC_SLEEPING --
                                            A      +                                                           +
                                            |      +--- do_exit --> PROC_ZOMBIE                                +
-                                           +                                                                  + 
+                                           +                                                                  +
                                            -----------------------wakeup_proc----------------------------------
 -----------------------------
 process relations
@@ -55,9 +55,9 @@ SYS_wait        : wait process                            -->do_wait
 SYS_exec        : after fork, process execute a program   -->load a program and refresh the mm
 SYS_clone       : create child thread                     -->do_fork-->wakeup_proc
 SYS_yield       : process flag itself need resecheduling, -- proc->need_sched=1, then scheduler will rescheule this process
-SYS_sleep       : process sleep                           -->do_sleep 
+SYS_sleep       : process sleep                           -->do_sleep
 SYS_kill        : kill process                            -->do_kill-->proc->flags |= PF_EXITING
-                                                                 -->wakeup_proc-->do_wait-->do_exit   
+                                                                 -->wakeup_proc-->do_wait-->do_exit
 SYS_getpid      : get the process's pid
 
 */
@@ -249,7 +249,7 @@ find_proc(int pid) {
 }
 
 // kernel_thread - create a kernel thread using "fn" function
-// NOTE: the contents of temp trapframe tf will be copied to 
+// NOTE: the contents of temp trapframe tf will be copied to
 //       proc->tf in do_fork-->copy_thread function
 int
 kernel_thread(int (*fn)(void *), void *arg, uint32_t clone_flags) {
@@ -414,8 +414,8 @@ put_fs(struct proc_struct *proc) {
 //    3. call copy_mm to dup OR share mm according clone_flag
 //    4. call copy_thread to setup tf & context in proc_struct
 //    5. insert proc_struct into hash_list && proc_list
-//    6. call wakup_proc to make the new child process RUNNABLE 
-//    7. set the 
+//    6. call wakup_proc to make the new child process RUNNABLE
+//    7. set the
 int
 do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     int ret = -E_NO_FREE_PROC;
@@ -479,7 +479,7 @@ do_exit(int error_code) {
     if (current == initproc) {
         panic("initproc exit.\n");
     }
-	
+
     struct mm_struct *mm = current->mm;
     if (mm != NULL) {
         lcr3(boot_cr3);
@@ -494,7 +494,7 @@ do_exit(int error_code) {
     current->state = PROC_ZOMBIE;
     current->exit_code = error_code;
 
-	
+
     bool intr_flag;
     struct proc_struct *proc;
     local_intr_save(intr_flag);
@@ -506,7 +506,7 @@ do_exit(int error_code) {
         while (current->cptr != NULL) {
             proc = current->cptr;
             current->cptr = proc->optr;
-	
+
             proc->yptr = NULL;
             if ((proc->optr = initproc->cptr) != NULL) {
                 initproc->cptr->yptr = proc;
@@ -521,7 +521,7 @@ do_exit(int error_code) {
         }
     }
     local_intr_restore(intr_flag);
-	
+
     schedule();
     panic("do_exit will not return!! %d.\n", current->pid);
 }
@@ -544,7 +544,7 @@ load_icode_read(int fd, void *buf, size_t len, off_t offset) {
 // 2. create a new PDT, and mm->pgdir= kernel virtual addr of PDT
 // 3. copy TEXT/DATA/BSS parts in binary to memory space of process
 // 4. call mm_map to setup user stack, and put parameters into user stack
-// 5. setup trapframe for user environment	
+// 5. setup trapframe for user environment
 static int
 load_icode(int fd, int argc, char **kargv) {
     if (current->mm != NULL) {
@@ -597,7 +597,7 @@ load_icode(int fd, int argc, char **kargv) {
       if (ph->p_flags & ELF_PF_X) vm_flags |= VM_EXEC;
       if (ph->p_flags & ELF_PF_W) vm_flags |= VM_WRITE;
       if (ph->p_flags & ELF_PF_R) vm_flags |= VM_READ;
-      if (vm_flags & VM_WRITE) perm |= PTE_W; 
+      if (vm_flags & VM_WRITE) perm |= PTE_W;
 
       if ((ret = mm_map(mm, ph->p_va, ph->p_memsz, vm_flags, NULL)) != 0) {
         goto bad_cleanup_mmap;
@@ -696,6 +696,7 @@ load_icode(int fd, int argc, char **kargv) {
     tf->tf_status = status;
     tf->tf_regs.reg_r[MIPS_REG_A0] = argc;
     tf->tf_regs.reg_r[MIPS_REG_A1] = (uint32_t)uargv;
+    // tf->tf_regs.reg_r[28] -= 8;
 
     //kprintf("## %08x\n", tf->tf_status);
     ret = 0;
@@ -757,12 +758,12 @@ do_execve(const char *name, int argc, const char **argv) {
 
     char local_name[PROC_NAME_LEN + 1];
     memset(local_name, 0, sizeof(local_name));
-	
+
     char *kargv[EXEC_MAX_ARG_NUM];
     const char *path;
-	
+
     int ret = -E_INVAL;
-	
+
     lock_mm(mm);
     if (name == NULL) {
         snprintf(local_name, sizeof(local_name), "<null> %d", current->pid);
@@ -781,7 +782,7 @@ do_execve(const char *name, int argc, const char **argv) {
     unlock_mm(mm);
     fs_closeall(current->fs_struct);
 
-    /* sysfile_open will check the first argument path, thus we have to use a user-space pointer, and argv[0] may be incorrect */	
+    /* sysfile_open will check the first argument path, thus we have to use a user-space pointer, and argv[0] may be incorrect */
     int fd;
     if ((ret = fd = sysfile_open(path, O_RDONLY)) < 0) {
         goto execve_exit;
@@ -915,7 +916,7 @@ kernel_execve(const char *name, const char **argv) {
       "nop;\n"
       "move %0, $v0;\n"
       : "=r"(ret)
-      : "i"(SYSCALL_BASE+SYS_exec), "r"(name), "r"(argc), "r"(argv), "r"(argc) 
+      : "i"(SYSCALL_BASE+SYS_exec), "r"(name), "r"(argc), "r"(argv), "r"(argc)
       : "a0", "a1", "a2", "a3", "v0"
     );
     return ret;
@@ -950,7 +951,7 @@ init_main(void *arg) {
     if ((ret = vfs_set_bootfs("disk0:")) != 0) {
         panic("set boot fs failed: %e.\n", ret);
     }
-	
+
     size_t nr_free_pages_store = nr_free_pages();
     size_t slab_allocated_store = kallocated();
 
@@ -975,7 +976,7 @@ init_main(void *arg) {
     return 0;
 }
 
-// proc_init - set up the first kernel thread idleproc "idle" by itself and 
+// proc_init - set up the first kernel thread idleproc "idle" by itself and
 //           - create the second kernel thread init_main
 void
 proc_init(void) {
