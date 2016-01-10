@@ -59,7 +59,7 @@ sfs_block_inuse(struct sfs_fs *sfs, uint32_t ino) {
     if (ino != 0 && ino < sfs->super.blocks) {
         return !bitmap_test(sfs->freemap, ino);
     }
-    panic("sfs_block_inuse: called out of range (0, %u) %u.\n", sfs->super.blocks, ino);
+    panic("sfs_block_inuse: called out of range (0, %d) %d.\n", sfs->super.blocks, ino);
 }
 
 static int
