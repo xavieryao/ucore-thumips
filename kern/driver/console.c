@@ -102,7 +102,7 @@ serial_proc_data(void) {
     //TODO
     if( (inw(COM1 + 0x04) & 0x02) == 0)
       return -1;
-    c = inw(COM1 - 0x04) & 0xFF;
+    c = inw(COM1 + 0x00) & 0xFF;
 #endif
     if (c == 127) {
         c = '\b';
