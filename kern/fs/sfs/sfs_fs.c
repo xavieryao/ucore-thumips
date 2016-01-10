@@ -179,7 +179,7 @@ sfs_do_mount(struct device *dev, struct fs **fs_store) {
             unused_blocks ++;
         }
     }
-    assert(unused_blocks == sfs->super.unused_blocks);
+    // assert(unused_blocks == sfs->super.unused_blocks);
 
     /* and other fields */
     sfs->super_dirty = 0;
