@@ -69,8 +69,8 @@ static inline void tlb_refill(uint32_t badaddr, pte_t *pte)
     pte--;
 
   static int index = 0;
-  index = (index+1) & 0xf;
-  write_one_tlb(index, 0, badaddr & THUMIPS_TLB_ENTRYH_VPN2_MASK,
+  index = 1103515245 * index + 12345;
+  write_one_tlb(index & 0x7, 0, badaddr & THUMIPS_TLB_ENTRYH_VPN2_MASK,
       pte2tlblow(*pte), pte2tlblow(*(pte+1)));
 }
 
