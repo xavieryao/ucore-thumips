@@ -72,8 +72,13 @@ serial_putc_sub(int c) {
     outb(COM1 + COM_TX, c);
 #elif defined MACH_FPGA
     //TODO
+#if defined MACH_QSYS
+    while( (inw(0xbfd003e0 + 0x08) & 0x40) == 0 );
+    outw(0xbfd003e0 + 0x04, c & 0xFF);
+#else
     while( (inw(COM1 + 0x04) & 0x01) == 0 );
     outw(COM1 + 0x00, c & 0xFF);
+#endif
 #endif
 }
 
@@ -100,9 +105,15 @@ serial_proc_data(void) {
     c = inb(COM1 + COM_RX);
 #elif defined MACH_FPGA
     //TODO
+#if defined MACH_QSYS
+    if( (inw(0xbfd003e0 + 0x08) & 0x80) == 0)
+      return -1;
+    c = inw(0xbfd003e0 + 0x00) & 0xFF;
+#else
     if( (inw(COM1 + 0x04) & 0x02) == 0)
       return -1;
     c = inw(COM1 + 0x00) & 0xFF;
+#endif
 #endif
     if (c == 127) {
         c = '\b';

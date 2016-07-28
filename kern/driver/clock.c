@@ -48,7 +48,7 @@ void clockOnTheWall_init(void){
 }
 
 unsigned int getClockOnTheWall(void){
-#ifdef MACH_QEMU
+#if (defined MACH_QEMU) || (defined MACH_QSYS)
      return (unsigned int)ticks;
 #elif defined MACH_FPGA
     return (unsigned int)*(volatile unsigned int*)0xbfd00500 - initClockOnTheWall;

@@ -4,3 +4,5 @@ boot/loader
 obj/
 tools/mkfs
 
+mksfs
+.gdb_history

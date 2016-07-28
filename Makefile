@@ -67,9 +67,9 @@ INCLUDES  += -I$(SRCDIR)/include
 
 ifeq  ($(ON_FPGA), y)
 USER_APPLIST:= sh mpack #ls 
-INITRD_BLOCK_CNT:=300 
+INITRD_BLOCK_CNT:=600 
 FPGA_LD_FLAGS += -S
-MACH_DEF := -DMACH_FPGA
+MACH_DEF := -DMACH_FPGA -DMACH_QSYS
 else
 USER_APPLIST:= pwd cat  mpack sh ls forktest yield hello faultreadkernel faultread badarg waitkill pgdir exit sleep
 # 2M
