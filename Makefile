@@ -6,7 +6,7 @@ ON_FPGA :=y
 
 V       := @
 
-#GCCPREFIX:=mips-sde-elf-
+GCCPREFIX:=mips-sde-elf-
 GCCPREFIX ?= /home/guest/cpu/build-gcc/mips_gcc/bin/mips-sde-elf-
 
 # eliminate default suffix rules
@@ -66,8 +66,8 @@ INCLUDES  := $(addprefix -I,$(SRC_DIR))
 INCLUDES  += -I$(SRCDIR)/include
 
 ifeq  ($(ON_FPGA), y)
-USER_APPLIST:= sh #ls 
-INITRD_BLOCK_CNT:=300 
+USER_APPLIST:= sh ls cat
+INITRD_BLOCK_CNT:=700 
 FPGA_LD_FLAGS += -S
 MACH_DEF := -DMACH_FPGA
 else

@@ -20,11 +20,9 @@ kernel_entry:
 	.align 4
 reset:
   /* from u-boot */
-#ifdef MACH_QEMU
 	/* Clear watch registers */
 	mtc0	$zero, CP0_WATCHLO
 	mtc0	$zero, CP0_WATCHHI
-#endif
 
 	/* WP(Watch Pending), SW0/1 should be cleared */
 	mtc0	$zero, CP0_CAUSE
