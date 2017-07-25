@@ -76,7 +76,11 @@ outw(uint32_t port, uint32_t data) {
 
 /* board specification */
 #define ISA_BASE        0xbfd00000
+#ifdef MACH_QEMU
 #define COM1            (ISA_BASE+0x3F8)
+#else
+#define COM1            0xbfd03000
+#endif
 #define COM1_IRQ        4
 
 #define TIMER0_IRQ       7

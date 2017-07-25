@@ -58,8 +58,21 @@ serial_init(void) {
     outb(COM1 + COM_MCR, 0);
     // Enable rcv interrupts
     outb(COM1 + COM_IER, COM_IER_RDI);
-#elif defined MACH_FPGA
-    //TODO
+#else
+    // Turn off the FIFO
+    outw(COM1 + (COM_FCR<<2), 0);
+    // Set speed; requires DLAB latch
+    outw(COM1 + (COM_LCR<<2), COM_LCR_DLAB);
+    outw(COM1 + (COM_DLL<<2), (uint8_t) (100000000/115200/16));
+    outw(COM1 + (COM_DLM<<2), 0);
+
+    // 8 data bits, 1 stop bit, parity off; turn off DLAB latch
+    outw(COM1 + (COM_LCR<<2), COM_LCR_WLEN8 & ~COM_LCR_DLAB);
+
+    // No modem controls
+    outw(COM1 + (COM_MCR<<2), 0);
+    // Enable rcv interrupts
+    outw(COM1 + (COM_IER<<2), COM_IER_RDI);
 #endif
 
     pic_enable(COM1_IRQ);
@@ -70,10 +83,9 @@ static void
 serial_putc_sub(int c) {
 #ifdef MACH_QEMU
     outb(COM1 + COM_TX, c);
-#elif defined MACH_FPGA
-    //TODO
-    while( (inw(COM1 + 0x04) & 0x01) == 0 );
-    outw(COM1 + 0x00, c & 0xFF);
+#else
+    while( (inw(COM1 + (COM_LSR<<2)) & COM_LSR_TXRDY) == 0 );
+    outw(COM1 + (COM_TX<<2), c);
 #endif
 }
 
@@ -97,11 +109,11 @@ serial_proc_data(void) {
         return -1;
     }
     c = inb(COM1 + COM_RX);
-#elif defined MACH_FPGA
-    //TODO
-    if( (inw(COM1 + 0x04) & 0x02) == 0)
-      return -1;
-    c = inw(COM1 + 0x00) & 0xFF;
+#else
+    if (!(inw(COM1 + (COM_LSR<<2)) & COM_LSR_DATA)) {
+        return -1;
+    }
+    c = inw(COM1 + (COM_RX<<2));
 #endif
     return c;
 }
@@ -111,6 +123,10 @@ void serial_int_handler(void *opaque)
 {
 #ifdef MACH_QEMU
   unsigned char id = inb(COM1+COM_IIR);
+  if(id & 0x01)
+    return ;
+#else
+  unsigned char id = inw(COM1+(COM_IIR<<2));
   if(id & 0x01)
     return ;
 #endif
