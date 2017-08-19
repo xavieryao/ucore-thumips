@@ -42,6 +42,7 @@ kern_init(void) {
     __asm__ volatile("syscall");
     kprintf("EX RET\n");
 #endif
+    lcd_main();
 
     pmm_init();                 // init physical memory management
 
