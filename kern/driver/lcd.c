@@ -808,7 +808,7 @@ uint16_t pic[HEIGHT][WIDTH] = {
 };
 
 
-volatile uint32_t * map = 0xbb000000;
+volatile uint32_t * map = 0xbc060000;
 
 int lcd_main(void) {
 	int i = 0, j = 0;

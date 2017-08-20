@@ -42,14 +42,13 @@ kern_init(void) {
     __asm__ volatile("syscall");
     kprintf("EX RET\n");
 #endif
-    lcd_main();
-
     pmm_init();                 // init physical memory management
 
     vmm_init();                 // init virtual memory management
     sched_init();
     proc_init();                // init process table
 
+    lcd_main();
     ide_init();
     fs_init();
 
