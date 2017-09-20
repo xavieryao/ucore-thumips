@@ -21,6 +21,24 @@ void setup_exception_vector()
       &__exception_vector_end - &__exception_vector);
 }
 
+void test_usb()
+{
+#define HCCHIPID_MASK       0xff00
+#define HCCHIPID_MAGIC      0x3600
+#define HCCHIPID    0x27
+    volatile unsigned int *ISP1362ADDR = 0xbc020004, *ISP1362DATA = 0xbc020000;
+    unsigned int chipid;
+    *ISP1362ADDR = HCCHIPID;
+    chipid = *ISP1362DATA;
+
+    kprintf("%s: Read chip ID %04x\n", __func__, chipid);
+    if ((chipid & HCCHIPID_MASK) != HCCHIPID_MAGIC) {
+        kprintf("%s: Invalid chip ID %04x\n", __func__, chipid);
+        return;
+    }
+    kprintf("######## USB Chip OK ########\n");
+}
+
 void __noreturn
 kern_init(void) {
     //setup_exception_vector();
@@ -42,6 +60,8 @@ kern_init(void) {
     __asm__ volatile("syscall");
     kprintf("EX RET\n");
 #endif
+
+    test_usb();
 
     pmm_init();                 // init physical memory management
 
