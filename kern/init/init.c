@@ -61,7 +61,7 @@ kern_init(void) {
     kprintf("EX RET\n");
 #endif
 
-    test_usb();
+    //test_usb();
 
     pmm_init();                 // init physical memory management
 
