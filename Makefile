@@ -22,7 +22,7 @@ GDB		:= $(GCCPREFIX)gdb
 THUMIPSCC		:= ./thumips-cc
 CLANG := clang
 CC :=$(GCCPREFIX)gcc
-CFLAGS	:=  -fno-builtin -nostdlib  -nostdinc -g  -EL -G0 -fno-delayed-branch -Wa,-O0
+CFLAGS	:=  -fno-builtin -nostdlib  -nostdinc -g -mno-abicalls -fno-pic -EL -G0 -fno-delayed-branch -Wa,-O0
 CTYPE	:= c S
 
 LD      := $(GCCPREFIX)ld
@@ -66,12 +66,12 @@ INCLUDES  := $(addprefix -I,$(SRC_DIR))
 INCLUDES  += -I$(SRCDIR)/include
 
 ifeq  ($(ON_FPGA), y)
-USER_APPLIST:= sh #ls 
-INITRD_BLOCK_CNT:=300 
+USER_APPLIST:= sh ls 
+INITRD_BLOCK_CNT:=500 
 FPGA_LD_FLAGS += -S
 MACH_DEF := -DMACH_FPGA
 else
-USER_APPLIST:= pwd cat sh ls forktest yield hello faultreadkernel faultread badarg waitkill pgdir exit sleep
+USER_APPLIST:= pwd cat sh ls forktest yield hello faultreadkernel faultread badarg pgdir exit sleep
 # 2M
 INITRD_BLOCK_CNT:=4000 
 MACH_DEF := -DMACH_QEMU
@@ -125,7 +125,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c -mips1 $(INCLUDES) $(CFLAGS) $(MACH_DEF) $<  -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.S
-	$(CC) -mips32 -c -D__ASSEMBLY__ $(MACH_DEF) $(INCLUDES) -g -EL -G0  $<  -o $@
+	$(CC) -mips32 -c -D__ASSEMBLY__ $(MACH_DEF) $(INCLUDES) -g -fno-pic -mno-abicalls -EL -G0  $<  -o $@
 
 checkdirs: $(BUILD_DIR) $(DEP_DIR)
 
@@ -166,7 +166,7 @@ $(USER_OBJDIR)/%.o: $(USER_SRCDIR)/%.c
 	$(CC) -c -mips1  $(USER_INCLUDE) -I$(SRCDIR)/include $(CFLAGS)  $<  -o $@
 
 $(USER_OBJDIR)/%.o: $(USER_SRCDIR)/%.S
-	$(CC) -mips32 -c -D__ASSEMBLY__ $(USER_INCLUDE) -I$(SRCDIR)/include -g -EL -G0  $<  -o $@
+	$(CC) -mips32 -c -D__ASSEMBLY__ $(USER_INCLUDE) -I$(SRCDIR)/include -g  -fno-pic -mno-abicalls -EL -G0  $<  -o $@
 
 
 # filesystem
