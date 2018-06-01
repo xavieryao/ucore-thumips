@@ -1,0 +1,9 @@
+obj/
+dep/
+*.o
+*.a
+*.bin
+*.ub
+boot/loader
+tools/mksfs
+.gdb_history
