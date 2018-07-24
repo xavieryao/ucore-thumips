@@ -1,0 +1,16 @@
+language: c
+before_install:
+  - sudo apt-get install -yy qemu-system-mips
+  - wget --no-check-certificate -O gcc.tgz 'https://www.mips.com/?do-download=linux-x64-mti-bare-metal-2016-05-06'
+  - tar -xf gcc.tgz
+
+script:
+  - make GCCPREFIX=$PWD/mips-mti-elf/2016.05-06/bin/mips-mti-elf- ON_FPGA=y -j4
+  - make GCCPREFIX=$PWD/mips-mti-elf/2016.05-06/bin/mips-mti-elf- ON_FPGA=y clean
+  - make GCCPREFIX=$PWD/mips-mti-elf/2016.05-06/bin/mips-mti-elf- ON_FPGA=n -j4
+  - echo "Running Tests"
+  - timeout 2s qemu-system-mipsel -M mipssim -m 32M -nographic -kernel obj/ucore-kernel-initrd -monitor none -serial stdio | tee stdout.txt || true
+  - grep 'user sh is running!!!' stdout.txt
+addons:
+  apt:
+    update: true
