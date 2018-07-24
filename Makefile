@@ -67,7 +67,7 @@ INCLUDES  += -I$(SRCDIR)/include
 
 ifeq  ($(ON_FPGA), y)
 USER_APPLIST:= sh mpack #ls 
-INITRD_BLOCK_CNT:=300 
+INITRD_BLOCK_CNT:=600 
 FPGA_LD_FLAGS += -S
 MACH_DEF := -DMACH_FPGA
 else
