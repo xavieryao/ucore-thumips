@@ -1,37 +1,25 @@
-EMPTY	:=
-SPACE	:= $(EMPTY) $(EMPTY)
-SLASH	:= /
-
 ON_FPGA :=y
 
-V       := @
-
-#GCCPREFIX:=mips-sde-elf-
-GCCPREFIX ?= /home/guest/cpu/build-gcc/mips_gcc/bin/mips-sde-elf-
+CROSS_COMPILE ?= mipsel-linux-gnu-
 
 # eliminate default suffix rules
 .SUFFIXES: .c .S .h
 
 # define compiler and flags
-
 HOSTCC		:= gcc
 HOSTCFLAGS	:= -g -Wall -O2
 
-GDB		:= $(GCCPREFIX)gdb
+GDB		:= $(CROSS_COMPILE)gdb
+CC      := $(CROSS_COMPILE)gcc
+LD      := $(CROSS_COMPILE)ld
+AS      := $(CROSS_COMPILE)as -EL -g -mips32
+AR      := $(CROSS_COMPILE)ar
+OBJCOPY := $(CROSS_COMPILE)objcopy
+OBJDUMP := $(CROSS_COMPILE)objdump
 
-THUMIPSCC		:= ./thumips-cc
-CLANG := clang
-CC :=$(GCCPREFIX)gcc
-CFLAGS	:=  -fno-builtin -nostdlib  -nostdinc -g -mno-abicalls -fno-pic -EL -G0 -fno-delayed-branch -Wa,-O0
-CTYPE	:= c S
-
-LD      := $(GCCPREFIX)ld
-AS      := $(GCCPREFIX)as -EL -g -mips32
-AR      := $(GCCPREFIX)ar
-LDFLAGS	+= -nostdlib
-
-OBJCOPY := $(GCCPREFIX)objcopy
-OBJDUMP := $(GCCPREFIX)objdump
+CFLAGS	:= -mips32 -ffreestanding -fno-builtin -nostdlib -nostdinc -g -mno-abicalls -fno-pic -EL -G0 -Wall -O3
+LDFLAGS	:= -EL -nostdlib -n -G 0 -static
+LDFLAGS_SCRIPT := $(LDFLAGS) -T tools/kernel.ld
 
 COPY	:= cp
 MKDIR   := mkdir -p
@@ -65,15 +53,14 @@ OBJ       += $(patsubst $(SRCDIR)/%.S, $(OBJDIR)/%.o, $(ASMSRC))
 INCLUDES  := $(addprefix -I,$(SRC_DIR))
 INCLUDES  += -I$(SRCDIR)/include
 
+# reserve 2MB for user app
+USER_APPLIST     := pwd cat sh ls forktest yield hello faultreadkernel faultread badarg pgdir exit sleep
+INITRD_BLOCK_CNT := 4000 
+
 ifeq  ($(ON_FPGA), y)
-USER_APPLIST:= sh ls 
-INITRD_BLOCK_CNT:=500 
 FPGA_LD_FLAGS += -S
 MACH_DEF := -DMACH_FPGA
 else
-USER_APPLIST:= pwd cat sh ls forktest yield hello faultreadkernel faultread badarg pgdir exit sleep
-# 2M
-INITRD_BLOCK_CNT:=4000 
 MACH_DEF := -DMACH_QEMU
 endif
 
@@ -97,8 +84,6 @@ BUILD_DIR   += $(USER_OBJDIR)
 DEPENDS := $(patsubst $(SRCDIR)/%.c, $(DEPDIR)/%.d, $(SRC))
 
 MAKEDEPEND = $(CLANG) -M $(CFLAGS) $(INCLUDES) -o $(DEPDIR)/$*.d $<
-#vpath %.c $(SRC_DIR)
-#vpath %.S $(SRC_DIR)
 
 .PHONY: all checkdirs clean 
 
@@ -109,11 +94,11 @@ $(shell mkdir -p $(DEP_DIR))
 
 obj/ucore-kernel:   $(OBJ) tools/kernel.ld
 	@echo LINK $@
-	$(LD) -nostdlib -n -G 0 -static -T tools/kernel.ld $(OBJ) -o $@
+	$(LD) $(LDFLAGS_SCRIPT) $(OBJ) -o $@
 
 obj/ucore-kernel-piggy: $(BUILD_DIR)  $(OBJ) $(USER_APP_BINS) tools/kernel.ld
 	@echo LINK $@
-	$(LD) -nostdlib -n -G 0 -static -T tools/kernel.ld $(OBJ) \
+	$(LD) $(LDFLAGS_SCRIPT) $(OBJ) \
 					$(addsuffix .piggy.o, $(USER_APP_BINS)) -o $@
 
 $(DEPDIR)/%.d: $(SRCDIR)/%.c
@@ -122,10 +107,10 @@ $(DEPDIR)/%.d: $(SRCDIR)/%.c
 		$(CC) -MM -MT "$(OBJDIR)/$*.o $@" $(CFLAGS) $(INCLUDES) $< > $@; 
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) -c -mips1 $(INCLUDES) $(CFLAGS) $(MACH_DEF) $<  -o $@
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(MACH_DEF) $<  -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.S
-	$(CC) -mips32 -c -D__ASSEMBLY__ $(MACH_DEF) $(INCLUDES) -g -fno-pic -mno-abicalls -EL -G0  $<  -o $@
+	$(CC) -c -D__ASSEMBLY__ $(MACH_DEF) $(INCLUDES) $(CFLAGS) $< -o $@
 
 checkdirs: $(BUILD_DIR) $(DEP_DIR)
 
@@ -146,7 +131,6 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 #user lib
-
 $(USER_LIB): $(BUILD_DIR) $(USER_LIB_OBJ)
 	@echo "Building USERLIB"
 	$(AR) rcs $@ $(USER_LIB_OBJ)
@@ -163,10 +147,10 @@ endef
 $(foreach bdir,$(USER_APP_BINS),$(eval $(call make-user-app,$(bdir))))
 
 $(USER_OBJDIR)/%.o: $(USER_SRCDIR)/%.c
-	$(CC) -c -mips1  $(USER_INCLUDE) -I$(SRCDIR)/include $(CFLAGS)  $<  -o $@
+	$(CC) -c $(USER_INCLUDE) -I$(SRCDIR)/include $(CFLAGS) $< -o $@
 
 $(USER_OBJDIR)/%.o: $(USER_SRCDIR)/%.S
-	$(CC) -mips32 -c -D__ASSEMBLY__ $(USER_INCLUDE) -I$(SRCDIR)/include -g  -fno-pic -mno-abicalls -EL -G0  $<  -o $@
+	$(CC) -c -D__ASSEMBLY__ $(USER_INCLUDE) -I$(SRCDIR)/include $(CFLAGS) $< -o $@
 
 
 # filesystem
@@ -176,22 +160,21 @@ ROOTFS_IMG:= $(USER_OBJDIR)/initrd.img
 $(TOOL_MKSFS): tools/mksfs.c
 	$(HOSTCC) $(HOSTCFLAGS) -o $@ $^
 
-$(OBJDIR)/ucore-kernel-initrd:  $(BUILD_DIR) $(TOOL_MKSFS) $(OBJ) $(USER_APP_BINS) tools/kernel.ld
+$(OBJDIR)/ucore-kernel-initrd: $(BUILD_DIR) $(TOOL_MKSFS) $(OBJ) $(USER_APP_BINS) tools/kernel.ld
 	rm -rf $(ROOTFS_DIR) $(ROOTFS_IMG)
 	mkdir $(ROOTFS_DIR)
 	cp $(USER_APP_BINS) $(ROOTFS_DIR)
 	cp -r $(USER_SRCDIR)/_archive/* $(ROOTFS_DIR)/
 	dd if=/dev/zero of=$(ROOTFS_IMG) count=$(INITRD_BLOCK_CNT)
-	#touch $(ROOTFS_IMG)
 	$(TOOL_MKSFS) $(ROOTFS_IMG) $(ROOTFS_DIR)
 	$(SED) 's%_FILE_%$(ROOTFS_IMG)%g' tools/initrd_piggy.S.in > $(USER_OBJDIR)/initrd_piggy.S
 	$(AS) $(USER_OBJDIR)/initrd_piggy.S -o $(USER_OBJDIR)/initrd.img.o
 	@echo LINK $@
-	$(LD) $(FPGA_LD_FLAGS) -nostdlib -n -G 0 -static -T tools/kernel.ld $(OBJ) \
+	$(LD) $(FPGA_LD_FLAGS) $(LDFLAGS_SCRIPT) $(OBJ) \
 				 $(USER_OBJDIR)/initrd.img.o -o $@
 	rm -rf $(ROOTFS_DIR)
 
 boot/loader.bin: boot/bootasm.S
 	$(CC) $(CFLAGS) -g -c -o boot/loader.o $^
-	$(LD) -EL -n -G0 -Ttext 0xbfc00000 -o boot/loader boot/loader.o
+	$(LD) $(LDFLAGS) -Ttext 0xbfc00000 -o boot/loader boot/loader.o
 	$(OBJCOPY) -O binary -j .text -S boot/loader $@
