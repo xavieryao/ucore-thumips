@@ -12,7 +12,7 @@ HOSTCFLAGS	:= -g -Wall -O2
 GDB		:= $(CROSS_COMPILE)gdb
 CC      := $(CROSS_COMPILE)gcc
 LD      := $(CROSS_COMPILE)ld
-AS      := $(CROSS_COMPILE)as -EL -g -mips32
+AS      := $(CROSS_COMPILE)as -EL -g -mips32 -msoft-float
 AR      := $(CROSS_COMPILE)ar
 OBJCOPY := $(CROSS_COMPILE)objcopy
 OBJDUMP := $(CROSS_COMPILE)objdump
@@ -138,8 +138,8 @@ define make-user-app
 $1: $(BUILD_DIR) $(addsuffix .o,$1) $(USER_LIB)
 	@echo LINK $$@
 	$(LD) $(FPGA_LD_FLAGS) -T $(USER_LIB_SRCDIR)/user.ld  $(addsuffix .o,$1) $(USER_LIB) -o $$@
-	$(SED) 's/$$$$FILE/$(notdir $1)/g' tools/piggy.S.in > $(USER_OBJDIR)/piggy.S
-	$(AS) $(USER_OBJDIR)/piggy.S -o $$@.piggy.o
+	$(SED) 's/$$$$FILE/$(notdir $1)/g' tools/piggy.S.in > $(USER_OBJDIR)/piggy.$(notdir $1).S
+	$(AS) $(USER_OBJDIR)/piggy.$(notdir $1).S -o $$@.piggy.o
 endef
 
 $(foreach bdir,$(USER_APP_BINS),$(eval $(call make-user-app,$(bdir))))
