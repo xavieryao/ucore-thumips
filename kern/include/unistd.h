@@ -23,7 +23,7 @@
 #define SYS_close           101
 #define SYS_read            102
 #define SYS_write           103
-#define SYS_seek            104
+#define SYS_seek            10
 #define SYS_fstat           110
 #define SYS_fsync           111
 #define SYS_getcwd          121
@@ -31,6 +31,8 @@
 #define SYS_dup             130
 /* OLNY FOR LAB6 */
 #define SYS_lab6_set_priority 255
+/* TrivialMIPS extensions */
+#define SYS_gwrite          254         // write to frame buffer
 
 /* SYS_fork flags */
 #define CLONE_VM            0x00000100  // set if VM shared between processes
