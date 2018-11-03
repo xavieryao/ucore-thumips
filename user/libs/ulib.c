@@ -80,3 +80,6 @@ __exec(const char *name, const char **argv) {
     return sys_exec(name, argc, argv);
 }
 
+int gwrite(char *base, size_t len) {
+    return sys_gwrite(base, len);
+}
