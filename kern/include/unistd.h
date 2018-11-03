@@ -23,7 +23,7 @@
 #define SYS_close           101
 #define SYS_read            102
 #define SYS_write           103
-#define SYS_seek            10
+#define SYS_seek            104
 #define SYS_fstat           110
 #define SYS_fsync           111
 #define SYS_getcwd          121
