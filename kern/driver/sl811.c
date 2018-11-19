@@ -305,7 +305,7 @@ int status_packet(int ep,
     return 0;
 }
 
-static char g_buf[0x10000];
+static char g_buf[512];
 
 #define SET(ptr, member, val) \
       struct_set((ptr), \
@@ -489,39 +489,49 @@ usbhub_clear_feature(int ep, int addr, int port, int feature) {
 }
 #endif
 
-int usb_int_in(char *buf, int ep, int addr) {
-    int a, b, i, scan;
-    int len = 8;
-    char ascii;
+int
+usb_int_in(char *buf, int len, int ep, int addr) {
+    int a, b, i;
+    char scan;
     a = in_packet(buf, len, ep, addr, 0); 
     b = status_packet(ep, addr);
-    if (a == 0) {
-        for (i = 2; i < 8; ++i) {
-            scan = buf[i];
-            ascii = 0;
-            if (scan > 0 && scan < 255) {
-                ascii = usb_hid_usage_table[scan];
-                if (ascii > 0) {
-                    extern void dev_stdin_write(char c);
-                    dev_stdin_write(ascii);
-                }
-            }
-        }
-        /* print_mem(buf, len); */
-    }
-    return 0;
+    return a;
 }
 
 static int
 kthread_sl811(void *arg) {
-    int addr = 1, ep = 1;
+    bool pressed[128] = {0};
+    int addr = 1, ep = 1, i;
     printf("sl811 kthread started\n");
     while(1){
         // kprintf("kthread_sl811 running\n");
         // do_sleep(1000);
 
-        if (usb_int_in(g_buf, ep, addr) < 0)
-            break;
+        if (usb_int_in(g_buf, 8, ep, addr) == 0){
+            bool pressed_now[128] = {0};
+            int scan, ascii;
+            for (i = 2; i < 8; ++i) {
+                scan = g_buf[i];
+                if(scan < 0 || scan >= 128)
+                    continue;
+                if((g_buf[0] & KEY_MOD_LSHIFT) || (g_buf[0] & KEY_MOD_RSHIFT))
+                    ascii = usb_hid_usage_table_shift[scan];
+                else
+                    ascii = usb_hid_usage_table[scan];
+                // printf("%d ", scan);
+                pressed_now[ascii] = 1;
+            }
+            // printf("\n");
+            
+            for(i = 1; i < 128; i++) {
+                if(!pressed[i] && pressed_now[i]) {
+                    char ascii = i;
+                    extern void dev_stdin_write(char c);
+                    dev_stdin_write(ascii);
+                }
+                pressed[i] = pressed_now[i];
+            }
+        }
         do_sleep(8);
     }
     return 0;
