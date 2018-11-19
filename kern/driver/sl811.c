@@ -185,8 +185,7 @@ int last_status = 0;
 int wait_transfer() {
     volatile unsigned int st, ctl, irq;
     int i;
-    // 20ms
-    for (i = 0; i < (16384 * 100); ++i) {
+    for (i = 0; i < 100; ++i) {
         /* ctl = sl811_read(SL11H_HOSTCTLREG); */
         schedule();
         irq = sl811_read(SL11H_IRQ_STATUS);
