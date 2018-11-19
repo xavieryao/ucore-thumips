@@ -116,20 +116,4 @@
 		: (SL11H_DATA_START + H_MAXPACKET))
 #define __nop { __asm__ __volatile__("nop"); }
 
-void sl811_write(unsigned char reg, unsigned char data) {
-    __nop
-    __nop
-    __nop
-    outb(SL811, reg);
-    __nop
-    __nop
-    __nop
-    outb(SL811+4, data);
-}
-unsigned char sl811_read(unsigned char reg) {
-    outb(SL811, reg);
-    __nop
-    __nop
-    __nop
-    return inb(SL811+4);
-}
+void usb_sl811_init(void);

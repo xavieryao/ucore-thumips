@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <sched.h>
+#include <proc.h>
 #include "sl811.h"
 #include "usb.h"
 #include "usb_hid.h"
@@ -33,15 +34,22 @@ inline void usleep(int us) {
     }
 }
 
-
-void usage() {
-    printf("sl811 [args]\n");
-    printf("  p [addr] [size], default, addr=0,size=0x10, in hex, print regs\n");
-    printf("  i, print info\n");
-    printf("  w reg val, write reg\n");
-    printf("  r reg, read reg\n");
-    printf("  e <ops_str>, send packets, ops can be s,i,t\n");
-    printf("  get_desc, get descriptor\n");
+void sl811_write(unsigned char reg, unsigned char data) {
+    __nop
+    __nop
+    __nop
+    outb(SL811, reg);
+    __nop
+    __nop
+    __nop
+    outb(SL811+4, data);
+}
+unsigned char sl811_read(unsigned char reg) {
+    outb(SL811, reg);
+    __nop
+    __nop
+    __nop
+    return inb(SL811+4);
 }
 
 
@@ -509,7 +517,51 @@ int usb_int_in(char *buf, int ep, int addr) {
     return 0;
 }
 
+static int
+kthread_sl811(void *arg) {
+    int addr = 0, ep = 0, idx = 1;
+    printf("sl811 kthread started\n");
+    while(1){
+        // kprintf("kthread_sl811 running\n");
+        // do_sleep(1000);
+
+        if (usb_int_in(g_buf, ep, addr) < 0)
+            break;
+        schedule();
+    }
+}
+
+void
+usb_sl811_init(void)
+{
+    reset_sl811();
+
+    int addr = 0, len; 
+    int ep = 0, idx = 1;
+    struct usb_dev_desc desc;
+    usb_get_dev_desc(&desc, ep, addr);
+    usb_set_address(ep, addr, 1);
+    addr = 1; 
+    len = 9;
+    usb_get_conf_desc(g_buf, len, ep, addr);
+    usb_set_conf(ep, addr, idx);
+
+    int pid = kernel_thread(kthread_sl811, NULL, 0);
+    printf("sl811 kthread started pid %d\n", pid);
+
+}
+
 #ifdef USERLAND_TEST
+
+void usage() {
+    printf("sl811 [args]\n");
+    printf("  p [addr] [size], default, addr=0,size=0x10, in hex, print regs\n");
+    printf("  i, print info\n");
+    printf("  w reg val, write reg\n");
+    printf("  r reg, read reg\n");
+    printf("  e <ops_str>, send packets, ops can be s,i,t\n");
+    printf("  get_desc, get descriptor\n");
+}
 int main(int argc, char **argv) {
     const char *cmd;
     int reg, data;
