@@ -8,6 +8,8 @@
 #include "usb.h"
 #include "usb_hid.h"
 
+#ifdef SL811
+
 static bool device_present;
 #define printf(...)                     kprintf(__VA_ARGS__)
 
@@ -758,4 +760,8 @@ int main(int argc, char **argv) {
     return 0;
 }
 
+#endif
+
+#else
+void usb_sl811_init(){}
 #endif
