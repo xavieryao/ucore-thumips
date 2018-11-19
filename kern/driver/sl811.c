@@ -8,31 +8,8 @@
 #include "usb.h"
 #include "usb_hid.h"
 
-
+static bool device_present;
 #define printf(...)                     kprintf(__VA_ARGS__)
-
-int mdelay(int ms) {
-  volatile int i = 0;
-  volatile int  sum = 0;
-  for (; i < 50000; ++i) {
-    *((volatile int *)&sum) += 1;
-    __nop;
-  }
-  return sum;
-}
-
-inline void msleep(int ms) {
-    int i;
-    for (i = 0; i < ms * (16384); ++i) {
-        __nop;
-    }
-}
-inline void usleep(int us) {
-    int i;
-    for (i = 0; i < us * (16); ++i) {
-        __nop;
-    }
-}
 
 void sl811_write(unsigned char reg, unsigned char data) {
     __nop
@@ -59,32 +36,12 @@ void sl811_write_buf(int base, const char *buf, int n) {
       sl811_write(base + i, buf[i]);
 }
 void sl811_read_buf(int base, char *buf, int n) {
-    int x = 0;
-    int i = 0, j;
-    if (n == 0)
-        return;
-    /* printf("sl811_read_buf\n"); */
-    for (; i < 16; ++i) {
-        /* printf("0x%02x:  ", base + i * 16); */
-        for (j = 0; j < 16; ++j) {
-            int val = sl811_read(base + i * 16 + j);
-            /* printf("%02x ", val); */
-            buf[x] = val;
-            if (x == n) {
-                /* printf("\n"); */
-                return;
-            }
-            x += 1;
-        }
-        /* printf("\n"); */
-    }
-}
-void sl811_read_buf_fast(int base, char *buf, int n) {
     int i;
     for (i = 0; i < n; ++i) 
       buf[i] = sl811_read(base + i);
 }
 
+#ifdef USERLAND_TEST
 void print_mem(const char *start, int count) {
     int x = 0;
     int i = 0, j;
@@ -123,24 +80,27 @@ int hex2i(const char *hex) {
     }
     return sum;
 }
+#endif
 
 void reset_sl811() {
     sl811_write(0xf, 0xae);
     sl811_write(0x5, 0x8);
-    mdelay(20);
+    do_sleep(50);
     sl811_write(0x5, 0x0);
     sl811_write(0xd, 0xff);
     int st = sl811_read(0xd);
     if ((st & 0x40) == 0) {
         if ((st & 0x80) != 0) {
-            printf("12Mbps device detected\n");
+            printf("12Mbps USB device detected\n");
         }
         else {
-            printf("1.5Mbps device detected\n");
+            printf("1.5Mbps USB device detected\n");
         }
+        device_present = 1;
     }
     else {
-        printf("No device detected\n");
+        printf("No USB device detected\n");
+        device_present = 0;
     }
 
 
@@ -150,7 +110,7 @@ void reset_sl811() {
     sl811_write(0xe, 0xe0);
 
     sl811_write(0x5, 8);
-    mdelay(20);
+    do_sleep(50);
     sl811_write(0xf, 0xae);
     sl811_write(0x5, 0x1);
     sl811_write(0x8, 0x1);
@@ -159,6 +119,7 @@ void reset_sl811() {
 
 }
 
+#ifdef USERLAND_TEST
 void print_sl811(int start, int count) {
     int x = 0;
     int i = 0, j;
@@ -217,11 +178,8 @@ void print_sl811_info() {
         isset(st,7),isset(st,6),isset(st,5),isset(st,4),isset(st,3),isset(st,2),isset(st,1),isset(st,0));
     printf("  N Transmitted %x\n", n_tx);
 }
+#endif
 
-#define sleep_us(x) 
-
-int transmit_cnt = 0;
-int wait_transfer_time = 0;
 int last_status = 0;
 
 int wait_transfer() {
@@ -274,7 +232,7 @@ int setup_packet(const struct usb_setup_pkt* ppkt,
     /* printf("hostctlreg: %x\n", v); */
     int p = wait_transfer();
     if (p != 0) {
-        print_sl811_info();
+        // print_sl811_info();
         if (p == -2)
             printf("setup_packet timeout\n");
         else
@@ -305,7 +263,7 @@ int in_packet(char *buf,
         int p = wait_transfer();
         sl811_write(SL11H_IRQ_STATUS, 0xff);
         if (p != 0) {
-            print_sl811_info();
+            // print_sl811_info();
             if (p == -2)
                 printf("in_packet timeout\n");
             else
@@ -341,7 +299,7 @@ int status_packet(int ep,
             printf("status_packet timeout\n");
         else
             printf("status_packet error\n");
-        print_sl811_info();
+        // print_sl811_info();
         return -1;
     }
     return 0;
@@ -355,7 +313,8 @@ static char g_buf[0x10000];
                 sizeof((ptr)->member), \
                 (val))
 
-void struct_set(void *ptr, int offset, int len, unsigned int val) {
+void
+struct_set(void *ptr, int offset, int len, unsigned int val) {
     unsigned int addr = (unsigned int)ptr + offset;
     unsigned int aligned_addr = (addr & 0xFFFFFFFC);
     unsigned int off = addr - aligned_addr;
@@ -365,7 +324,8 @@ void struct_set(void *ptr, int offset, int len, unsigned int val) {
     *((unsigned int*)aligned_addr) = cell_zeroed | data_shifted;
 }
 
-void usb_get_dev_desc(struct usb_dev_desc *desc, int ep, int addr) {
+int
+usb_get_dev_desc(struct usb_dev_desc *desc, int ep, int addr) {
     int a, b, c;
     struct usb_setup_pkt pkt;
     SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
@@ -376,12 +336,18 @@ void usb_get_dev_desc(struct usb_dev_desc *desc, int ep, int addr) {
     a = setup_packet(&pkt, ep, addr);
     b = in_packet((char*)desc, sizeof(struct usb_dev_desc), ep, addr, 1); 
     c = status_packet(ep, addr);
-    printf("Cycles: %d, %d, %d\n", a, b, c);
-    printf("DeviceDescriptor returned:\n");
-    print_mem((const char*)desc, sizeof(*desc));
+    // printf("Cycles: %d, %d, %d\n", a, b, c);
+    // printf("DeviceDescriptor returned:\n");
+    // print_mem((const char*)desc, sizeof(*desc));
+    if(a || b || c){
+        printf("usb_get_dev_desc failed\n");
+        return -1;
+    }
+    return 0;
 }
 
-void usb_set_address(int ep, int addr, int new_addr) {
+int
+usb_set_address(int ep, int addr, int new_addr) {
     int a, b; char buf[10];
     struct usb_setup_pkt pkt;
     SET(&pkt, req_type, USB_REQ_TYPE_OUT | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
@@ -391,11 +357,17 @@ void usb_set_address(int ep, int addr, int new_addr) {
     SET(&pkt, cnt, 0);
     a = setup_packet(&pkt, ep, addr);
     b = in_packet(buf, 0, ep, addr, 1);
-    printf("Cycles: %d, %d\n", a, b);
-    printf("Address set: %x\n", new_addr);
+    // printf("Cycles: %d, %d\n", a, b);
+    // printf("Address set: %x\n", new_addr);
+    if(a || b){
+        printf("usb_set_address failed\n");
+        return -1;
+    }
+    return 0;
 }
 
-void usb_get_conf_desc(char *buf, int len, int ep, int addr) {
+int
+usb_get_conf_desc(char *buf, int len, int ep, int addr) {
     int a, b, c, n_read = 0, n_max = 120, rest = len, offset = 0, pkt_size = 0;
     struct usb_setup_pkt pkt;
     SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
@@ -404,7 +376,7 @@ void usb_get_conf_desc(char *buf, int len, int ep, int addr) {
     SET(&pkt, idx, 0);
     SET(&pkt, cnt, len);
     a = setup_packet(&pkt, ep, addr);
-    while (1) {
+    while (rest > 0) {
         offset = len - rest;
         if (rest > n_max)
             pkt_size = n_max;
@@ -412,15 +384,21 @@ void usb_get_conf_desc(char *buf, int len, int ep, int addr) {
             pkt_size = rest;
         rest -= pkt_size;
         b = in_packet(((char*)g_buf + offset), pkt_size, ep, addr, 1); 
-        if (rest <= 0)
+        if(b)
             break;
     }
     c = status_packet(ep, addr);
-    printf("Cycles: %d, %d, %d\n", a, b, c);
-    printf("ConfigurationDescriptor returned:\n");
-    print_mem((const char*)buf, len);
+    // printf("Cycles: %d, %d, %d\n", a, b, c);
+    // printf("ConfigurationDescriptor returned:\n");
+    // print_mem((const char*)buf, len);
+    if(a || b || c){
+        printf("usb_get_conf_desc failed\n");
+        return -1;
+    }
+    return 0;
 }
-void usb_get_str_desc(char *buf, int *plen, int ep, int addr, int idx) {
+int
+usb_get_str_desc(char *buf, int *plen, int ep, int addr, int idx) {
     int a, b, c, max_packet_size = 0x3C; // 60Bytes
     struct usb_setup_pkt pkt;
     SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
@@ -432,11 +410,17 @@ void usb_get_str_desc(char *buf, int *plen, int ep, int addr, int idx) {
     b = in_packet((char*)buf, max_packet_size, ep, addr, 1); 
     c = status_packet(ep, addr);
     *plen = sl811_read(0x20);
-    printf("Cycles: %d, %d, %d\n", a, b, c);
-    printf("StringDescriptor returned, len %d:\n", *plen);
-    print_mem((const char*)buf, *plen);
+    // printf("Cycles: %d, %d, %d\n", a, b, c);
+    // printf("StringDescriptor returned, len %d:\n", *plen);
+    // print_mem((const char*)buf, *plen);
+    if(a || b || c){
+        printf("usb_get_str_desc failed\n");
+        return -1;
+    }
+    return 0;
 }
-void usb_set_conf(int ep, int addr, int idx) {
+int
+usb_set_conf(int ep, int addr, int idx) {
     int a, b; char buf[10];
     struct usb_setup_pkt pkt;
     SET(&pkt, req_type, USB_REQ_TYPE_OUT | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
@@ -447,10 +431,18 @@ void usb_set_conf(int ep, int addr, int idx) {
     a = setup_packet(&pkt, ep, addr);
     b = in_packet(buf, 0, ep, addr, 1);
     /* c = status_packet(ep, addr); */
-    printf("Cycles: %d, %d\n", a, b);
-    printf("Configuration set: %x\n", idx);
+    // printf("Cycles: %d, %d\n", a, b);
+    // printf("Configuration set: %x\n", idx);
+    if(a || b){
+        printf("usb_set_conf failed\n");
+        return -1;
+    }
+    return 0;
 }
-void usbhub_get_status(char *buf, int ep, int addr, int port) {
+
+#ifdef USERLAND_TEST
+void
+usbhub_get_status(char *buf, int ep, int addr, int port) {
     int a, b, c;
     struct usb_setup_pkt pkt;
     int status_len = 4;
@@ -466,7 +458,8 @@ void usbhub_get_status(char *buf, int ep, int addr, int port) {
     printf("USB Hub GetStatus returned:\n");
     print_mem(buf, status_len);
 }
-void usbhub_set_feature(int ep, int addr, int port, int feature) {
+void
+usbhub_set_feature(int ep, int addr, int port, int feature) {
     int a, b; char buf[10];
     struct usb_setup_pkt pkt;
     SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_CLASS | USB_REQ_TYPE_OTHER);
@@ -480,7 +473,8 @@ void usbhub_set_feature(int ep, int addr, int port, int feature) {
     printf("Cycles: %d, %d\n", a, b);
     printf("USB Hub Feature set: %x\n", feature);
 }
-void usbhub_clear_feature(int ep, int addr, int port, int feature) {
+void
+usbhub_clear_feature(int ep, int addr, int port, int feature) {
     int a, b; char buf[10];
     struct usb_setup_pkt pkt;
     SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_CLASS | USB_REQ_TYPE_OTHER);
@@ -493,6 +487,7 @@ void usbhub_clear_feature(int ep, int addr, int port, int feature) {
     printf("Cycles: %d, %d\n", a, b);
     printf("USB Hub Feature cleared: %x\n", feature);
 }
+#endif
 
 int usb_int_in(char *buf, int ep, int addr) {
     int a, b, i, scan;
@@ -519,7 +514,7 @@ int usb_int_in(char *buf, int ep, int addr) {
 
 static int
 kthread_sl811(void *arg) {
-    int addr = 0, ep = 0, idx = 1;
+    int addr = 1, ep = 1;
     printf("sl811 kthread started\n");
     while(1){
         // kprintf("kthread_sl811 running\n");
@@ -527,27 +522,30 @@ kthread_sl811(void *arg) {
 
         if (usb_int_in(g_buf, ep, addr) < 0)
             break;
-        schedule();
+        do_sleep(8);
     }
+    return 0;
 }
 
 void
 usb_sl811_init(void)
 {
-    reset_sl811();
-
     int addr = 0, len; 
-    int ep = 0, idx = 1;
+    int ep = 0;
     struct usb_dev_desc desc;
-    usb_get_dev_desc(&desc, ep, addr);
-    usb_set_address(ep, addr, 1);
+    reset_sl811();
+    if(!device_present)
+        return;
+    if(usb_get_dev_desc(&desc, ep, addr) != 0)
+        return;
+    if(usb_set_address(ep, addr, 1) != 0)
+        return;
     addr = 1; 
-    len = 9;
-    usb_get_conf_desc(g_buf, len, ep, addr);
-    usb_set_conf(ep, addr, idx);
+    // usb_get_conf_desc(g_buf, 9, ep, addr);
+    usb_set_conf(ep, addr, 1);
 
     int pid = kernel_thread(kthread_sl811, NULL, 0);
-    printf("sl811 kthread started pid %d\n", pid);
+    // printf("sl811 kthread started pid %d\n", pid);
 
 }
 
