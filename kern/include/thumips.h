@@ -81,6 +81,9 @@ outw(uint32_t port, uint32_t data) {
 
 #define TIMER0_IRQ       7
 
+#define SL811           (0xbc020000)
+
+#define CP0_TIMER_HZ    50000000
 
 #endif /* !__LIBS_THUMIPS_H__ */
 
