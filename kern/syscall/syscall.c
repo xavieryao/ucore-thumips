@@ -4,10 +4,12 @@
 #include <trap.h>
 #include <stdio.h>
 #include <pmm.h>
+#include <vmm.h>
 #include <assert.h>
 #include <stat.h>
 #include <dirent.h>
 #include <sysfile.h>
+#include <error.h>
 
 extern volatile int ticks;
 
@@ -157,6 +159,33 @@ sys_dup(uint32_t arg[]) {
     return sysfile_dup(fd1, fd2);
 }
 
+/*
+ *  copy bytes to frame buffer.
+ */
+static int
+sys_gwrite(uint32_t arg[]) {
+    void *base = (void *)arg[0];
+    size_t len = (size_t)arg[1];
+    void* target = GRAPHICSBASE;
+
+    if (len == 0) {
+        return 0;
+    }
+
+    struct mm_struct *mm = current->mm;
+    int ret = 0;
+
+    lock_mm(mm);
+    {
+        if (!copy_from_user(mm, target, base, len, 0)) {
+            ret = -E_INVAL;
+        }
+    }
+    unlock_mm(mm);
+
+    return ret;
+}
+
 
 static int (*syscalls[])(uint32_t arg[]) = {
   [SYS_exit]              sys_exit,
@@ -180,6 +209,7 @@ static int (*syscalls[])(uint32_t arg[]) = {
   [SYS_getcwd]            sys_getcwd,
   [SYS_getdirentry]       sys_getdirentry,
   [SYS_dup]               sys_dup,
+  [SYS_gwrite]            sys_gwrite
 };
 
 #define NUM_SYSCALLS        ((sizeof(syscalls)) / (sizeof(syscalls[0])))

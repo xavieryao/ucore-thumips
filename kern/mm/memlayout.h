@@ -29,6 +29,8 @@
 #define KERN_ACCESS(start, end)                     \
 (KERNBASE <= (start) && (start) < (end) && (end) <= KERNTOP)
 
+#define KSEG1BASE            0xA0000000
+#define GRAPHICSBASE         0xA1000000
 
 #ifndef __ASSEMBLER__
 

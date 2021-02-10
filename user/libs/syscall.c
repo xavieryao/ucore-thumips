@@ -141,3 +141,8 @@ int
 sys_dup(int fd1, int fd2) {
     return syscall(SYS_dup, fd1, fd2);
 }
+
+int
+sys_gwrite(char *base, size_t len) {
+    return syscall(SYS_gwrite, base, len);
+}

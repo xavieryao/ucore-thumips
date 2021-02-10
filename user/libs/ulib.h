@@ -45,5 +45,7 @@ int __exec(const char *name, const char **argv);
 
 void lab6_set_priority(uint32_t priority); //only for lab6
 
+int sys_gwrite(char *base, size_t len);
+
 #endif /* !__USER_LIBS_ULIB_H__ */
 
